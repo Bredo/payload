@@ -378,6 +378,44 @@ export function fieldsToJSONSchema(
           }
 
           case 'join': {
+            let items: JSONSchema4
+
+            if (Array.isArray(field.collection)) {
+              items = {
+                oneOf: field.collection.map((collection) => ({
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    relationTo: {
+                      const: collection,
+                    },
+                    value: {
+                      oneOf: [
+                        {
+                          type: collectionIDFieldTypes[collection],
+                        },
+                        {
+                          $ref: `#/definitions/${collection}`,
+                        },
+                      ],
+                    },
+                  },
+                  required: ['collectionSlug', 'value'],
+                })),
+              }
+            } else {
+              items = {
+                oneOf: [
+                  {
+                    type: collectionIDFieldTypes[field.collection],
+                  },
+                  {
+                    $ref: `#/definitions/${field.collection}`,
+                  },
+                ],
+              }
+            }
+
             fieldSchema = {
               ...baseFieldSchema,
               type: withNullableJSONSchemaType('object', false),
@@ -385,16 +423,7 @@ export function fieldsToJSONSchema(
               properties: {
                 docs: {
                   type: withNullableJSONSchemaType('array', false),
-                  items: {
-                    oneOf: [
-                      {
-                        type: collectionIDFieldTypes[field.collection],
-                      },
-                      {
-                        $ref: `#/definitions/${field.collection}`,
-                      },
-                    ],
-                  },
+                  items,
                 },
                 hasNextPage: { type: withNullableJSONSchemaType('boolean', false) },
               },

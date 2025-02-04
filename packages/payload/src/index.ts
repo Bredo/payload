@@ -1204,6 +1204,7 @@ export type {
   FlattenedBlocksField,
   FlattenedField,
   FlattenedGroupField,
+  FlattenedJoinField,
   FlattenedTabAsField,
   GroupField,
   GroupFieldClient,
