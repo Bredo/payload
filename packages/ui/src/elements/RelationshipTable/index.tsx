@@ -5,10 +5,12 @@ import { getTranslation } from '@payloadcms/translations'
 import React, { Fragment, useCallback, useEffect, useState } from 'react'
 
 import type { DocumentDrawerProps } from '../DocumentDrawer/types.js'
+import type { Option } from '../ReactSelect/types.js'
 import type { Column } from '../Table/index.js'
 
 import { Button } from '../../elements/Button/index.js'
 import { Pill } from '../../elements/Pill/index.js'
+import { SelectInput } from '../../fields/Select/Input.js'
 import { useEffectEvent } from '../../hooks/useEffectEvent.js'
 import { ChevronIcon } from '../../icons/Chevron/index.js'
 import { useAuth } from '../../providers/Auth/index.js'
@@ -61,7 +63,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
     relationTo,
   } = props
   const [Table, setTable] = useState<React.ReactNode>(null)
-  const { getEntityConfig } = useConfig()
+  const { config, getEntityConfig } = useConfig()
 
   const { permissions } = useAuth()
 
@@ -93,6 +95,9 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
 
   const [collectionConfig] = useState(() => getEntityConfig({ collectionSlug: relationTo }))
 
+  const [selectedCollection, setSelectedCollection] = useState(
+    Array.isArray(relationTo) ? relationTo[0] : relationTo,
+  )
   const [isLoadingTable, setIsLoadingTable] = useState(!disableTable)
   const [data, setData] = useState<PaginatedDocs>(initialData)
   const [columnState, setColumnState] = useState<Column[]>()
@@ -135,7 +140,6 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
         tableAppearance: 'condensed',
       })
 
-      console.log(NewTable)
       setData(newData)
       setTable(NewTable)
       setColumnState(newColumnState)
@@ -166,7 +170,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
   }, [query, disableTable])
 
   const [DocumentDrawer, DocumentDrawerToggler, { closeDrawer, openDrawer }] = useDocumentDrawer({
-    collectionSlug: Array.isArray(relationTo) ? relationTo[0] : relationTo,
+    collectionSlug: selectedCollection,
   })
 
   const onDrawerSave = useCallback<DocumentDrawerProps['onSave']>(
@@ -219,6 +223,22 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
               {i18n.t('fields:addNew')}
             </DocumentDrawerToggler>
           )}
+          {Array.isArray(relationTo) && (
+            <SelectInput
+              isClearable={false}
+              name="selectCollection"
+              onChange={(opt) => setSelectedCollection((opt as Option).value as string)}
+              options={relationTo.map((collection) => ({
+                label: getTranslation(
+                  config.collections.find((each) => each.slug === collection).labels.singular,
+                  i18n,
+                ),
+                value: collection,
+              }))}
+              path="selectCollection"
+              value={selectedCollection}
+            />
+          )}
           <Pill
             aria-controls={`${baseClass}-columns`}
             aria-expanded={openColumnSelector}
@@ -254,7 +274,7 @@ export const RelationshipTable: React.FC<RelationshipTableComponentProps> = (pro
               )}
             </div>
           )}
-          {data?.docs && data.docs.length > 0 && (
+          {data.docs && data.docs.length > 0 && (
             <RelationshipProvider>
               <ListQueryProvider
                 data={data}
